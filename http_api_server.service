@@ -1,0 +1,17 @@
+[Unit]
+Description=HTTP API Server
+After=network.target
+
+[Service]
+Type=simple
+User=http_api_server
+Group=http_api_server
+WorkingDirectory=/opt/http_api_server/
+ExecStart=/opt/http_api_server/http_api_server
+StandardOutput=syslog
+Restart=always
+RestartSec=1
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target

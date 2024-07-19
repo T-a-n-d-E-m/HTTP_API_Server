@@ -9,7 +9,6 @@
 // TODO: Update to version 7.14? Seems to have a lot of arbitrary breaking
 // changes that would have little to no benefit here...
 #include "mongoose.h"
-#define closesocket(x) close(x)
 
 #include "constants.h"
 
@@ -69,6 +68,24 @@ static const uint16_t HTTP_SERVER_BIND_PORT = 8181;
 static const char* HTTP_SERVER_FQDN = "http://harvest-sigma.bnr.la"; // FIXME: This mirrors g_config.eventbot_host.
 static const char* HTTP_SERVER_DOC_ROOT = "www-root"; // Relative to executable
 
+#if MG_ENABLE_CUSTOM_LOG
+// Currently not used...
+void mg_log_prefix(int level, const char* file, int line, const char* fname) {
+	(void)level; (void)file; (void)line; (void)fname;
+}
+
+void mg_log(const char* fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	log(g_log_level, fmt, args);
+	va_end(args);
+}
+#endif // MG_ENABLE_CUSTOM_LOG
+
+// Direct mongoose to write to our log file
+void log_write_char(char c, void*) {
+	fputc(c, g_log_descriptor);
+}
 
 static void start_thread(void *(*f)(void *), void *p) {
 	pthread_t thread_id = (pthread_t) 0;
@@ -464,7 +481,6 @@ http_response parse_stats(const mg_str json) {
 	return {200, mg_mprintf(R"({"result":"ok"})")};
 }
 
-#if ENABLE_LEADERBOARD
 static const size_t MAX_LEADERBOARD_ROWS = 100;
 static const size_t MAX_WEEKS_PER_SEASON = 13;
 
@@ -661,9 +677,7 @@ http_response parse_leaderboards(const mg_str json) {
 
 	return {200, mg_mprintf(R"({"result":"ok"})")};
 }
-#endif // ENABLE_LEADERBOARD
 
-#if ENABLE_THUMBNAILS
 http_response make_thumbnail(const mg_str json) {
 	static const int THUMBNAIL_SIZE = 50;
 
@@ -714,9 +728,7 @@ http_response make_thumbnail(const mg_str json) {
 		}
 	}
 }
-#endif // ENABLE_THUMBNAIL
 
-#if ENABLE_PDF_TO_PNG
 static Database_Result<Database_No_Value> database_upsert_badge_card(const uint64_t member_id, const char* url) {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
 	static const char* query = "REPLACE INTO badges (id, url, timestamp) VALUES (?,?,?)";
@@ -825,9 +837,7 @@ http_response pdf_to_png(const mg_str json) {
 
 	return {201, mg_mprintf(R"({"result":"%s"})", url)};
 }
-#endif // ENABLE_PDF_TO_PNG
 
-#if ENABLE_COMMANDS
 static Database_Result<Database_No_Value> database_clear_commands() {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
 	static const char* query = "TRUNCATE TABLE commands";
@@ -923,9 +933,7 @@ http_response parse_commands(const mg_str json) {
 
 	return {200, mg_mprintf(R"({"result":"ok"})")};
 }
-#endif // ENABLE_COMMANDS
 
-#if ENABLE_XMAGE
 Database_Result<Database_No_Value> database_update_xmage_version(const char* version) {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
 	static const char* query = "REPLACE INTO xmage_version (version, timestamp) VALUES (?,?)";
@@ -954,7 +962,6 @@ http_response parse_xmage_version(const mg_str json) {
 
 	return {200, mg_mprintf(R"({"result":"ok"})")};
 }
-#endif // ENABLE_XMAGE
 
 // Handles POST requests
 static void *post_thread_function(void *param) {
@@ -985,31 +992,21 @@ static void *post_thread_function(void *param) {
 		if(mg_match(p->uri, mg_str("/api/v1/upload_stats"), NULL)) {
 			response = parse_stats(p->body);
 		} else
-#if ENABLE_LEADERBOARD
 		if(mg_match(p->uri, mg_str("/api/v1/upload_leaderboard"), NULL)) {
 			response = parse_leaderboards(p->body);
 		} else
-#endif // ENABLE_LEADERBOARDS
-#if ENABLE_COMMANDS
 		if(mg_match(p->uri, mg_str("/api/v1/upload_commands"), NULL)) {
 			response = parse_commands(p->body);
 		} else
-#endif // ENABLE_COMMANDS
-#if ENABLE_THUMBNAIL
 		if(mg_match(p->uri, mg_str("/api/v1/make_thumbnail"), NULL)) {
 			response = make_thumbnail(p->body);
 		} else
-#endif // ENDABLE_THUMBNAIL
-#if ENABLE_XMAGE
 		if(mg_match(p->uri, mg_str("/api/v1/update_xmage_version"), NULL)) {
 			response = parse_xmage_version(p->body);
 		} else
-#endif // ENABLE_XMAGE
 		if(mg_match(p->uri, mg_str("/api/v1/pdf2png"), NULL)) {
-#if ENABLE_PDF_TO_PNG
 			response = pdf_to_png(p->body);
-#endif // ENABLE_PDF_TO_PNG
-		}else {
+		} else {
 			response = {400, strdup(R"({"result":"Invalid API endpoint"})")};
 		}
 	}
@@ -1092,7 +1089,7 @@ static void sig_handler(int signo) {
 		case SIGABRT: // Fall through
 		case SIGHUP:  // Fall through
 		case SIGTERM:
-			log(LOG_LEVEL_INFO, "Caught signal %d", strsignal(signo));
+			log(LOG_LEVEL_INFO, "Caught signal %s", strsignal(signo));
 			break;
 
 		default: log(LOG_LEVEL_INFO, "Caught unhandled signal: %d", signo);
@@ -1108,6 +1105,10 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	if(!log_init("server.log")) {
+		return EXIT_FAILURE;
+	}
+
 	(void)signal(SIGINT,  sig_handler);
 	(void)signal(SIGABRT, sig_handler);
 	(void)signal(SIGHUP,  sig_handler);
@@ -1115,6 +1116,7 @@ int main(int argc, char* argv[]) {
 
 	mg_mgr mgr;
 	mg_log_set(MG_LL_DEBUG);
+	mg_log_set_fn(log_write_char, NULL);
 	mg_mgr_init(&mgr);
 	char listen[64];
 	snprintf(listen, 64, "%s:%d", HTTP_SERVER_BIND_ADDRESS, HTTP_SERVER_BIND_PORT);
@@ -1126,6 +1128,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	mg_mgr_free(&mgr);
+
+	log_close();
 
 	return g_exit_code;
 }
