@@ -63,9 +63,6 @@
 // find everywhere in here that calls time(NULL)-(10*60*60) and remove the
 // adjustment.
 
-static const char* HTTP_SERVER_BIND_ADDRESS = "0.0.0.0";
-static const uint16_t HTTP_SERVER_BIND_PORT = 8181;
-static const char* HTTP_SERVER_FQDN = "http://harvest-sigma.bnr.la"; // FIXME: This mirrors g_config.eventbot_host.
 static const char* HTTP_SERVER_DOC_ROOT = "www-root"; // Relative to executable
 
 #if MG_ENABLE_CUSTOM_LOG
@@ -698,7 +695,7 @@ http_response make_thumbnail(const mg_str json) {
 	char local_file_path[FILENAME_MAX];
 	snprintf(local_file_path, FILENAME_MAX, "%s/static/badge_thumbnails/%s", HTTP_SERVER_DOC_ROOT, filename);
 	if(access(local_file_path, F_OK) == 0) {
-		return {200, mg_mprintf(R"({"result":"%s:%d/static/badge_thumbnails/%s"})", HTTP_SERVER_FQDN, HTTP_SERVER_BIND_PORT, filename)};
+		return {200, mg_mprintf(R"({"result":"%s:%d/static/badge_thumbnails/%s"})", g_config.server_fqdn, g_config.bind_port, filename)};
 	} else {
 		log(LOG_LEVEL_DEBUG, "%s: downloadfile(%s)", __FUNCTION__, url);
 		auto buffer = download_file(url);
@@ -716,7 +713,7 @@ http_response make_thumbnail(const mg_str json) {
 				snprintf(local_file_path, FILENAME_MAX, "%s/static/badge_thumbnails/%s", HTTP_SERVER_DOC_ROOT, filename);
 				stbi_write_png_compression_level = 9;
 				if(stbi_write_png(local_file_path, THUMBNAIL_SIZE, THUMBNAIL_SIZE, 4, resized, THUMBNAIL_SIZE*4) != 0) {
-					return {201, mg_mprintf(R"({"result":"%s:%d/static/badge_thumbnails/%s"})", HTTP_SERVER_FQDN, HTTP_SERVER_BIND_PORT, filename)};
+					return {201, mg_mprintf(R"({"result":"%s:%d/static/badge_thumbnails/%s"})", g_config.server_fqdn, g_config.bind_port, filename)};
 				} else {
 					return {500, mg_mprintf(R"({"result":"%s"})", "saving file failed")};
 				}
@@ -1101,13 +1098,17 @@ static void sig_handler(int signo) {
 int main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
 
+	if(!log_init("server.log")) {
+		return EXIT_FAILURE;
+	}
+
 	if(!load_config_file("server.ini", config_file_kv_pair_callback)) {
 		return EXIT_FAILURE;
 	}
 
-	if(!log_init("server.log")) {
-		return EXIT_FAILURE;
-	}
+	log(LOG_LEVEL_INFO, "server_fqdn: %s", g_config.server_fqdn);
+	log(LOG_LEVEL_INFO, "server_bind: %s", g_config.bind_address);
+	log(LOG_LEVEL_INFO, "server_port: %u ", g_config.bind_port);
 
 	(void)signal(SIGINT,  sig_handler);
 	(void)signal(SIGABRT, sig_handler);
@@ -1119,7 +1120,7 @@ int main(int argc, char* argv[]) {
 	mg_log_set_fn(log_write_char, NULL);
 	mg_mgr_init(&mgr);
 	char listen[64];
-	snprintf(listen, 64, "%s:%d", HTTP_SERVER_BIND_ADDRESS, HTTP_SERVER_BIND_PORT);
+	snprintf(listen, 64, "%s:%d", g_config.bind_address, g_config.bind_port);
 	mg_http_listen(&mgr, listen, http_server_func, NULL);
 	mg_wakeup_init(&mgr);
 
