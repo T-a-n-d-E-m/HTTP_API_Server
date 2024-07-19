@@ -1,1 +1,21 @@
+# The HTTP server API_KEY
 api_key = 1234567890ABCDEF
+
+bind_address = 0.0.0.0
+bind_port = 8000
+server_fqdn = http://example.com
+
+# Port the MySQL server is listening on.
+mysql_port = 3306
+
+# Username to use when connecting to MySQL
+mysql_username = username
+
+# Password to use when connecting to MySQL
+mysql_password = password
+
+# Where to write the log file
+logfile_path = /var/log/http_api_server.log
+
+# Imgur client secret key
+imgur_client_secret = 1234567890ABCDEF
