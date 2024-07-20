@@ -1171,14 +1171,23 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	fprintf(stdout, "mysql_host          = '%s'\n", g_config.mysql_host);
+	fprintf(stdout, "mysql_port          = '%d'\n", g_config.mysql_port);
+	fprintf(stdout, "mysql_username      = '%s'\n", g_config.mysql_username);
+	fprintf(stdout, "mysql_password      = '%s'\n", g_config.mysql_password);
+	fprintf(stdout, "mysql_database      = '%s'\n", g_config.mysql_database);
+	fprintf(stdout, "logfile_path        = '%s'\n", g_config.logfile_path);
+	fprintf(stdout, "api_key             = '%s'\n", g_config.api_key);
+	fprintf(stdout, "imgur_client_secret = '%s'\n", g_config.imgur_client_secret);
+	fprintf(stdout, "server_fqdn         = '%s'\n", g_config.server_fqdn);
+	fprintf(stdout, "bind_address        = '%s'\n", g_config.bind_address);
+	fprintf(stdout, "bind_port           = '%d'\n", g_config.bind_port);
+	
 	if(!log_init(g_config.logfile_path)) {
 		return EXIT_FAILURE;
 	}
 
 	log(LOG_LEVEL_INFO, "mongoose version: %s", MG_VERSION);
-	log(LOG_LEVEL_INFO, "server_fqdn: %s", g_config.server_fqdn);
-	log(LOG_LEVEL_INFO, "server_bind: %s", g_config.bind_address);
-	log(LOG_LEVEL_INFO, "server_port: %u ", g_config.bind_port);
 
 	(void)signal(SIGINT,  sig_handler);
 	(void)signal(SIGABRT, sig_handler);
