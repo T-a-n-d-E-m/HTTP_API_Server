@@ -21,6 +21,7 @@ struct Config {
 	unsigned short mysql_port;
 	char* mysql_username;
 	char* mysql_password;
+	char* mysql_database;
 
 	char* imgur_client_secret;
 
@@ -33,6 +34,7 @@ struct Config {
 		free(mysql_host);
 		free(mysql_username);
 		free(mysql_password);
+		free(mysql_database);
 		free(imgur_client_secret);
 		free(logfile_path);
 	}
@@ -89,8 +91,6 @@ struct Config {
 // Once the Python API server is completely gone
 // find everywhere in here that calls time(NULL)-(10*60*60) and remove the
 // adjustment.
-
-static const char* HTTP_SERVER_DOC_ROOT = "www-root"; // Relative to executable
 
 #if MG_ENABLE_CUSTOM_LOG
 // Currently not used...
@@ -191,7 +191,7 @@ struct Stats {
 };
 
 static Database_Result<Database_No_Value> database_touch_stats(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO stats (id, timestamp) VALUES (?,?)";
 	MYSQL_STATEMENT();
 
@@ -206,7 +206,7 @@ static Database_Result<Database_No_Value> database_touch_stats(const Stats* stat
 }
 
 static Database_Result<Database_No_Value> database_upsert_devotion(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO devotion (id, name, value, next) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -221,7 +221,7 @@ static Database_Result<Database_No_Value> database_upsert_devotion(const Stats* 
 }
 
 static Database_Result<Database_No_Value> database_upsert_victory(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO victory (id, name, value, next) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -236,7 +236,7 @@ static Database_Result<Database_No_Value> database_upsert_victory(const Stats* s
 }
 
 static Database_Result<Database_No_Value> database_upsert_trophies(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO trophies (id, name, value, next) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -251,7 +251,7 @@ static Database_Result<Database_No_Value> database_upsert_trophies(const Stats* 
 }
 
 static Database_Result<Database_No_Value> database_upsert_hero(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO hero (id, name, value, next) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -266,7 +266,7 @@ static Database_Result<Database_No_Value> database_upsert_hero(const Stats* stat
 }
 
 static Database_Result<Database_No_Value> database_upsert_shark(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO shark (id, name, value, next, is_shark) VALUES (?,?,?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -282,7 +282,7 @@ static Database_Result<Database_No_Value> database_upsert_shark(const Stats* sta
 }
 
 static Database_Result<Database_No_Value> database_upsert_win_rate_all_time(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO win_rate_all_time (id, league, bonus, overall) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -301,7 +301,7 @@ static Database_Result<Database_No_Value> database_upsert_win_rate_all_time(cons
 }
 
 static Database_Result<Database_No_Value> database_upsert_win_rate_recent(const Stats* stats) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO win_rate_recent (id, league, bonus, overall) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -565,7 +565,7 @@ void print_leaderboard(const Leaderboard* l) {
 }
 
 static Database_Result<Database_No_Value> database_upsert_leaderboard(const Leaderboard* leaderboard) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = R"(
 		REPLACE INTO leaderboards(
 			league,    -- 0
@@ -770,7 +770,7 @@ http_response make_thumbnail(const mg_str json) {
 }
 
 static Database_Result<Database_No_Value> database_upsert_badge_card(const uint64_t member_id, const char* url) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO badges (id, url, timestamp) VALUES (?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -857,7 +857,7 @@ http_response pdf_to_png(const mg_str json) {
 	}
 	SCOPE_EXIT(STBIW_FREE(png));
 
-	auto upload = upload_img_to_imgur((const char*)png, size);
+	auto upload = upload_img_to_imgur((const char*)png, size, g_config.imgur_client_secret);
 	if(is_error(upload)) {
 		return {500, mg_mprintf(R"({"result":"Error uploading to Imgur: %s"})", upload.errstr)};
 	}
@@ -879,7 +879,7 @@ http_response pdf_to_png(const mg_str json) {
 }
 
 static Database_Result<Database_No_Value> database_clear_commands() {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "TRUNCATE TABLE commands";
 	MYSQL_STATEMENT();
 	MYSQL_EXECUTE();
@@ -887,7 +887,7 @@ static Database_Result<Database_No_Value> database_clear_commands() {
 }
 
 static Database_Result<Database_No_Value> database_insert_command(const char* name, const bool team, const char* content) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "INSERT INTO commands (name, team, content) VALUES (?,?,?)";
 	MYSQL_STATEMENT();
 
@@ -975,7 +975,7 @@ http_response parse_commands(const mg_str json) {
 }
 
 Database_Result<Database_No_Value> database_update_xmage_version(const char* version) {
-	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, "XDHS", g_config.mysql_port);
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "REPLACE INTO xmage_version (version, timestamp) VALUES (?,?)";
 	MYSQL_STATEMENT();
 
@@ -1142,6 +1142,7 @@ void load_config_callback(const char* key, const char* value, size_t value_len) 
 	CONFIG_KEY_U16(mysql_port) else
 	CONFIG_KEY_STR(mysql_username) else
 	CONFIG_KEY_STR(mysql_password) else
+	CONFIG_KEY_STR(mysql_database) else
 	CONFIG_KEY_STR(imgur_client_secret) else
 	CONFIG_KEY_STR(bind_address) else
 	CONFIG_KEY_STR(server_fqdn) else
@@ -1161,6 +1162,7 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	log(LOG_LEVEL_INFO, "mongoose version: %s", MG_VERSION);
 	log(LOG_LEVEL_INFO, "server_fqdn: %s", g_config.server_fqdn);
 	log(LOG_LEVEL_INFO, "server_bind: %s", g_config.bind_address);
 	log(LOG_LEVEL_INFO, "server_port: %u ", g_config.bind_port);

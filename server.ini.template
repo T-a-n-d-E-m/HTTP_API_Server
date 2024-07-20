@@ -14,6 +14,9 @@ mysql_username = username
 # Password to use when connecting to MySQL
 mysql_password = password
 
+# Database to read/write from
+mysql_database = DB_NAME_HERE
+
 # Where to write the log file
 logfile_path = /var/log/http_api_server.log
 
