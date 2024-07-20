@@ -1,6 +1,6 @@
 # binary
 http_api_server
-server.ini
+http_api_server.ini
 
 # Prerequisites
 *.d

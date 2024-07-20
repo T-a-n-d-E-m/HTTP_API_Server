@@ -1,3 +1,9 @@
+#ifdef DEBUG
+static const char* BUILD_MODE = "Debug";
+#else
+static const char* BUILD_MODE = "Release";
+#endif
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1152,9 +1158,16 @@ void load_config_callback(const char* key, const char* value, size_t value_len) 
 }
 
 int main(int argc, char* argv[]) {
-	(void)argc; (void)argv;
+	if(argc > 1) {
+		if(strcmp(argv[1], "-version") == 0) {
+			// Used by the install script to ensure we're running the correct build on the public server.
+			fprintf(stdout, "%s", BUILD_MODE);
+			return EXIT_SUCCESS;
+		}
 
-	if(!load_config_file("server.ini", load_config_callback)) {
+	}
+
+	if(!load_config_file("http_api_server.ini", load_config_callback)) {
 		return EXIT_FAILURE;
 	}
 
