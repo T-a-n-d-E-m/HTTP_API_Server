@@ -10,12 +10,39 @@
 // changes that would have little to no benefit here...
 #include "mongoose.h"
 
-#include "constants.h"
+struct Config {
+	char* bind_address;
+	char* server_fqdn;
+	unsigned short bind_port;
 
+	char* api_key;
+
+	char* mysql_host;
+	unsigned short mysql_port;
+	char* mysql_username;
+	char* mysql_password;
+
+	char* imgur_client_secret;
+
+	char* logfile_path;
+
+	~Config() {
+		free(bind_address);
+		free(server_fqdn);
+		free(api_key);
+		free(mysql_host);
+		free(mysql_username);
+		free(mysql_password);
+		free(imgur_client_secret);
+		free(logfile_path);
+	}
+} g_config;
+#include "config.h"
+
+#include "constants.h"
 #include "result.h"
 #include "log.h"
 #include "database.h"
-#include "config.h"
 #include "curl.h"
 #include "scope_exit.h"
 
@@ -114,6 +141,7 @@ struct http_response {
 
 #define STR_OR_NULL(ptr) ((ptr != NULL ? ptr : "(NULL)"))
 
+// TODO: This is used by the database schema and should be shared with EventBot.
 static const char STAT_NAME_MAX_LENGTH = 32;
 
 struct Stats {
@@ -343,6 +371,9 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'devotion.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.devotion.name));
+	if(strlen(stats.devotion.name) > STAT_NAME_MAX_LENGTH) {
+		return {400, mg_mprintf(R"({"result":"'devotion.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	}
 
 	stats.devotion.value = mg_json_get_long(json, "$.devotion.value", -1);
 	if(stats.devotion.value == -1) {
@@ -359,6 +390,9 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'victory.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.victory.name));
+	if(strlen(stats.victory.name) > STAT_NAME_MAX_LENGTH) {
+		return {400, mg_mprintf(R"({"result":"'victory.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	}
 
 	stats.victory.value = mg_json_get_long(json, "$.victory.value", -1);
 	if(stats.victory.value == -1) {
@@ -375,6 +409,9 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'trophies.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.trophies.name));
+	if(strlen(stats.trophies.name) > STAT_NAME_MAX_LENGTH) {
+		return {400, mg_mprintf(R"({"result":"'trophies.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	}
 
 	stats.trophies.value = mg_json_get_long(json, "$.trophies.value", -1);
 	if(stats.trophies.value == -1) {
@@ -391,6 +428,9 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'hero.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.hero.name));
+	if(strlen(stats.hero.name) > STAT_NAME_MAX_LENGTH) {
+		return {400, mg_mprintf(R"({"result":"'hero.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	}
 
 	stats.hero.value = mg_json_get_long(json, "$.hero.value", -1);
 	if(stats.hero.value == -1) {
@@ -407,6 +447,9 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'shark.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.shark.name));
+	if(strlen(stats.shark.name) > STAT_NAME_MAX_LENGTH) {
+		return {400, mg_mprintf(R"({"result":"'shark.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	}
 
 	stats.shark.value = mg_json_get_long(json, "$.shark.value", -1);
 	if(stats.shark.value == -1) {
@@ -1018,11 +1061,11 @@ static void http_server_func(mg_connection *con, int event, void *event_data) {
 		mg_http_message *message = (mg_http_message *) event_data;
 
 		log(LOG_LEVEL_DEBUG, "%s: Method:%.*s URI:%.*s, Proto:%.*s Body:\"%.*s\"",
-				__FUNCTION__,
-				message->method.len, STR_OR_NULL(message->method.ptr),
-				message->uri.len, STR_OR_NULL(message->uri.ptr),
-				message->proto.len, STR_OR_NULL(message->proto.ptr),
-				message->body.len, STR_OR_NULL(message->body.ptr)
+			__FUNCTION__,
+			message->method.len, STR_OR_NULL(message->method.ptr),
+			message->uri.len, STR_OR_NULL(message->uri.ptr),
+			message->proto.len, STR_OR_NULL(message->proto.ptr),
+			message->body.len, STR_OR_NULL(message->body.ptr)
 		);
 
 		if(mg_match(message->method, mg_str("GET"), NULL)) {
@@ -1094,15 +1137,27 @@ static void sig_handler(int signo) {
 	g_exit_code = signo;
 }
 
+void load_config_callback(const char* key, const char* value, size_t value_len) {
+	CONFIG_KEY_STR(mysql_host) else
+	CONFIG_KEY_U16(mysql_port) else
+	CONFIG_KEY_STR(mysql_username) else
+	CONFIG_KEY_STR(mysql_password) else
+	CONFIG_KEY_STR(imgur_client_secret) else
+	CONFIG_KEY_STR(bind_address) else
+	CONFIG_KEY_STR(server_fqdn) else
+	CONFIG_KEY_U16(bind_port) else
+	CONFIG_KEY_STR(api_key) else
+	CONFIG_KEY_STR(logfile_path)
+}
 
 int main(int argc, char* argv[]) {
 	(void)argc; (void)argv;
 
-	if(!log_init("server.log")) {
+	if(!load_config_file("server.ini", load_config_callback)) {
 		return EXIT_FAILURE;
 	}
 
-	if(!load_config_file("server.ini", config_file_kv_pair_callback)) {
+	if(!log_init(g_config.logfile_path)) {
 		return EXIT_FAILURE;
 	}
 
