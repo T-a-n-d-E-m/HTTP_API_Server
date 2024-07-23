@@ -943,7 +943,7 @@ http_response parse_commands(const mg_str json) {
 		}
 		const mg_str row = {json.ptr + offset, (size_t) length};
 
-		commands.push_back({NULL, 0, NULL});
+		commands.push_back({NULL, false, false, NULL});
 
 		commands.back().name = mg_json_get_str(row, "$.name");
 		if(commands.back().name == NULL) {
