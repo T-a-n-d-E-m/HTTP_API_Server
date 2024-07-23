@@ -892,15 +892,16 @@ static Database_Result<Database_No_Value> database_clear_commands() {
 	MYSQL_RETURN();
 }
 
-static Database_Result<Database_No_Value> database_insert_command(const char* name, const bool team, const char* content) {
+static Database_Result<Database_No_Value> database_insert_command(const char* name, const bool team, const bool hidden, const char* content) {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
-	static const char* query = "INSERT INTO commands (name, team, content) VALUES (?,?,?)";
+	static const char* query = "INSERT INTO commands (name, team, hidden, content) VALUES (?,?,?)";
 	MYSQL_STATEMENT();
 
-	MYSQL_INPUT_INIT(3);
+	MYSQL_INPUT_INIT(4);
 	MYSQL_INPUT(0, MYSQL_TYPE_STRING, name, strlen(name));
 	MYSQL_INPUT(1, MYSQL_TYPE_TINY, &team, sizeof(team));
-	MYSQL_INPUT(2, MYSQL_TYPE_STRING, content, strlen(content));
+	MYSQL_INPUT(2, MYSQL_TYPE_TINY, &hidden, sizeof(hidden));
+	MYSQL_INPUT(3, MYSQL_TYPE_STRING, content, strlen(content));
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -910,6 +911,7 @@ http_response parse_commands(const mg_str json) {
 	struct Command {
 		char* name;
 		bool team;
+		bool hidden;
 		char* text;
 	};
 
@@ -957,6 +959,10 @@ http_response parse_commands(const mg_str json) {
 			return {400, mg_mprintf(R"({"result":"'team' key not found"})")};
 		}
 
+		if(mg_json_get_bool(row, "$.hide", &commands.back().hidden) == false) {
+			return {400, mg_mprintf(R"({"result":"'hide' key not found"})")};
+		}
+
 		//log(LOG_LEVEL_DEBUG, "%s: command %d: %s", __FUNCTION__, index, commands.back().name);
 
 		index++;
@@ -970,7 +976,7 @@ http_response parse_commands(const mg_str json) {
 	}
 
 	for(auto& c : commands) {
-		if(is_error(database_insert_command(c.name, c.team, c.text))) {
+		if(is_error(database_insert_command(c.name, c.team, c.hidden, c.text))) {
 			return {500, mg_mprintf(R"({"result":"Internal server error: database_insert_command() failed"})")};
 		} else {
 			log(LOG_LEVEL_INFO, "%s: Added command: %s", __FUNCTION__, c.name);
