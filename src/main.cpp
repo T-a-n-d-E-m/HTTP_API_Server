@@ -892,16 +892,17 @@ static Database_Result<Database_No_Value> database_clear_commands() {
 	MYSQL_RETURN();
 }
 
-static Database_Result<Database_No_Value> database_insert_command(const char* name, const bool team, const bool hidden, const char* content) {
+static Database_Result<Database_No_Value> database_insert_command(const char* name, const bool team, const bool hidden, const char* content, const char* summary) {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
-	static const char* query = "INSERT INTO commands (name, team, hidden, content) VALUES (?,?,?,?)";
+	static const char* query = "INSERT INTO commands (name, team, hidden, content, summary) VALUES (?,?,?,?,?)";
 	MYSQL_STATEMENT();
 
-	MYSQL_INPUT_INIT(4);
+	MYSQL_INPUT_INIT(5);
 	MYSQL_INPUT(0, MYSQL_TYPE_STRING, name, strlen(name));
 	MYSQL_INPUT(1, MYSQL_TYPE_TINY, &team, sizeof(team));
 	MYSQL_INPUT(2, MYSQL_TYPE_TINY, &hidden, sizeof(hidden));
 	MYSQL_INPUT(3, MYSQL_TYPE_STRING, content, strlen(content));
+	MYSQL_INPUT(4, MYSQL_TYPE_STRING, summary, strlen(summary));
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -913,6 +914,7 @@ http_response parse_commands(const mg_str json) {
 		bool team;
 		bool hidden;
 		char* text;
+		char* summary;
 	};
 
 	std::vector<Command> commands;
@@ -922,6 +924,7 @@ http_response parse_commands(const mg_str json) {
 		for(auto& c : commands) {
 			free(c.name);
 			free(c.text);
+			free(c.summary);
 		}
 	};
 
@@ -943,7 +946,7 @@ http_response parse_commands(const mg_str json) {
 		}
 		const mg_str row = {json.ptr + offset, (size_t) length};
 
-		commands.push_back({NULL, false, false, NULL});
+		commands.push_back({NULL, false, false, NULL, NULL});
 
 		commands.back().name = mg_json_get_str(row, "$.name");
 		if(commands.back().name == NULL) {
@@ -953,6 +956,11 @@ http_response parse_commands(const mg_str json) {
 		commands.back().text = mg_json_get_str(row, "$.text");
 		if(commands.back().text == NULL) {
 			return {400, mg_mprintf(R"({"result":"'text' key not found"})")};
+		}
+
+		commands.back().summary = mg_json_get_str(row, "$.summary");
+		if(commands.back().summary == NULL) {
+			return {400, mg_mprintf(R"({"result":"'summary' key not found"})")};
 		}
 
 		if(mg_json_get_bool(row, "$.team", &commands.back().team) == false) {
@@ -976,7 +984,7 @@ http_response parse_commands(const mg_str json) {
 	}
 
 	for(auto& c : commands) {
-		if(is_error(database_insert_command(c.name, c.team, c.hidden, c.text))) {
+		if(is_error(database_insert_command(c.name, c.team, c.hidden, c.text, c.summary))) {
 			return {500, mg_mprintf(R"({"result":"Internal server error: database_insert_command() failed"})")};
 		} else {
 			log(LOG_LEVEL_INFO, "%s: Added command: %s", __FUNCTION__, c.name);
