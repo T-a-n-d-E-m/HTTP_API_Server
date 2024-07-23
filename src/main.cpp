@@ -894,7 +894,7 @@ static Database_Result<Database_No_Value> database_clear_commands() {
 
 static Database_Result<Database_No_Value> database_insert_command(const char* name, const bool team, const bool hidden, const char* content) {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
-	static const char* query = "INSERT INTO commands (name, team, hidden, content) VALUES (?,?,?)";
+	static const char* query = "INSERT INTO commands (name, team, hidden, content) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(4);
