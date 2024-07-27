@@ -147,9 +147,6 @@ struct http_response {
 
 #define STR_OR_NULL(ptr) ((ptr != NULL ? ptr : "(NULL)"))
 
-// TODO: This is used by the database schema and should be shared with EventBot.
-static const char STAT_NAME_MAX_LENGTH = 32;
-
 struct Stats {
 	uint64_t member_id; // Called user_id when sent from sheet
 	struct {
@@ -377,8 +374,8 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'devotion.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.devotion.name));
-	if(strlen(stats.devotion.name) > STAT_NAME_MAX_LENGTH) {
-		return {400, mg_mprintf(R"({"result":"'devotion.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	if(strlen(stats.devotion.name) > DEVOTION_BADGE_NAME_LENGTH_MAX) {
+		return {400, mg_mprintf(R"({"result":"'devotion.name' > %d characters"})", DEVOTION_BADGE_NAME_LENGTH_MAX)};
 	}
 
 	stats.devotion.value = mg_json_get_long(json, "$.devotion.value", -1);
@@ -396,8 +393,8 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'victory.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.victory.name));
-	if(strlen(stats.victory.name) > STAT_NAME_MAX_LENGTH) {
-		return {400, mg_mprintf(R"({"result":"'victory.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	if(strlen(stats.victory.name) > VICTORY_BADGE_NAME_LENGTH_MAX) {
+		return {400, mg_mprintf(R"({"result":"'victory.name' > %d characters"})", VICTORY_BADGE_NAME_LENGTH_MAX)};
 	}
 
 	stats.victory.value = mg_json_get_long(json, "$.victory.value", -1);
@@ -415,8 +412,8 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'trophies.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.trophies.name));
-	if(strlen(stats.trophies.name) > STAT_NAME_MAX_LENGTH) {
-		return {400, mg_mprintf(R"({"result":"'trophies.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	if(strlen(stats.trophies.name) > TROPHIES_BADGE_NAME_LENGTH_MAX) {
+		return {400, mg_mprintf(R"({"result":"'trophies.name' > %d characters"})", TROPHIES_BADGE_NAME_LENGTH_MAX)};
 	}
 
 	stats.trophies.value = mg_json_get_long(json, "$.trophies.value", -1);
@@ -434,8 +431,8 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'hero.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.hero.name));
-	if(strlen(stats.hero.name) > STAT_NAME_MAX_LENGTH) {
-		return {400, mg_mprintf(R"({"result":"'hero.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	if(strlen(stats.hero.name) > SHARK_BADGE_NAME_LENGTH_MAX) {
+		return {400, mg_mprintf(R"({"result":"'hero.name' > %d characters"})", SHARK_BADGE_NAME_LENGTH_MAX)};
 	}
 
 	stats.hero.value = mg_json_get_long(json, "$.hero.value", -1);
@@ -453,8 +450,8 @@ http_response parse_stats(const mg_str json) {
 		return {400, mg_mprintf(R"({"result":"'shark.name' key not found"})")};
 	}
 	SCOPE_EXIT(free(stats.shark.name));
-	if(strlen(stats.shark.name) > STAT_NAME_MAX_LENGTH) {
-		return {400, mg_mprintf(R"({"result":"'shark.name' > %d characters"})", STAT_NAME_MAX_LENGTH)};
+	if(strlen(stats.shark.name) > SHARK_BADGE_NAME_LENGTH_MAX) {
+		return {400, mg_mprintf(R"({"result":"'shark.name' > %d characters"})", SHARK_BADGE_NAME_LENGTH_MAX)};
 	}
 
 	stats.shark.value = mg_json_get_long(json, "$.shark.value", -1);
