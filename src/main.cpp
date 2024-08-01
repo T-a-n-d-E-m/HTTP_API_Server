@@ -201,8 +201,8 @@ static Database_Result<Database_No_Value> database_touch_stats(const Stats* stat
 	time_t timestamp = time(NULL) - (10*60*60); // NOTE: Temporary time adjustment until the ?stats command is moved to C++
 
 	MYSQL_INPUT_INIT(2);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_LONGLONG, &timestamp, sizeof(timestamp));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_I64(&timestamp);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -214,10 +214,10 @@ static Database_Result<Database_No_Value> database_upsert_devotion(const Stats* 
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(4);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_STRING, stats->devotion.name, strlen(stats->devotion.name));
-	MYSQL_INPUT(2, MYSQL_TYPE_SHORT, &stats->devotion.value, sizeof(stats->devotion.value));
-	MYSQL_INPUT(3, MYSQL_TYPE_SHORT, &stats->devotion.next, sizeof(stats->devotion.next));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_STR(stats->devotion.name, strlen(stats->devotion.name));
+	MYSQL_INPUT_I32(&stats->devotion.value);
+	MYSQL_INPUT_I32(&stats->devotion.next);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -229,10 +229,10 @@ static Database_Result<Database_No_Value> database_upsert_victory(const Stats* s
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(4);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_STRING, stats->victory.name, strlen(stats->victory.name));
-	MYSQL_INPUT(2, MYSQL_TYPE_SHORT, &stats->victory.value, sizeof(stats->victory.value));
-	MYSQL_INPUT(3, MYSQL_TYPE_SHORT, &stats->victory.next, sizeof(stats->victory.next));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_STR(stats->victory.name, strlen(stats->victory.name));
+	MYSQL_INPUT_I32(&stats->victory.value);
+	MYSQL_INPUT_I32(&stats->victory.next);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -244,10 +244,10 @@ static Database_Result<Database_No_Value> database_upsert_trophies(const Stats* 
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(4);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_STRING, stats->trophies.name, strlen(stats->trophies.name));
-	MYSQL_INPUT(2, MYSQL_TYPE_SHORT, &stats->trophies.value, sizeof(stats->trophies.value));
-	MYSQL_INPUT(3, MYSQL_TYPE_SHORT, &stats->trophies.next, sizeof(stats->trophies.next));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_STR(stats->trophies.name, strlen(stats->trophies.name));
+	MYSQL_INPUT_I32(&stats->trophies.value);
+	MYSQL_INPUT_I32(&stats->trophies.next);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -259,10 +259,10 @@ static Database_Result<Database_No_Value> database_upsert_hero(const Stats* stat
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(4);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_STRING, stats->hero.name, strlen(stats->hero.name));
-	MYSQL_INPUT(2, MYSQL_TYPE_SHORT, &stats->hero.value, sizeof(stats->hero.value));
-	MYSQL_INPUT(3, MYSQL_TYPE_SHORT, &stats->hero.next, sizeof(stats->hero.next));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_STR(stats->hero.name, strlen(stats->hero.name));
+	MYSQL_INPUT_I32(&stats->hero.value);
+	MYSQL_INPUT_I32(&stats->hero.next);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -274,11 +274,11 @@ static Database_Result<Database_No_Value> database_upsert_shark(const Stats* sta
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(5);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_STRING, stats->shark.name, strlen(stats->shark.name));
-	MYSQL_INPUT(2, MYSQL_TYPE_SHORT, &stats->shark.value, sizeof(stats->shark.value));
-	MYSQL_INPUT(3, MYSQL_TYPE_SHORT, &stats->shark.next, sizeof(stats->shark.next));
-	MYSQL_INPUT(4, MYSQL_TYPE_TINY, &stats->shark.is_shark, sizeof(stats->shark.is_shark));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_STR(stats->shark.name, strlen(stats->shark.name));
+	MYSQL_INPUT_I32(&stats->shark.value);
+	MYSQL_INPUT_I32(&stats->shark.next);
+	MYSQL_INPUT_I32(&stats->shark.is_shark);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -294,10 +294,10 @@ static Database_Result<Database_No_Value> database_upsert_win_rate_all_time(cons
 	float overall = (float) stats->win_rate_all_time.overall;
 
 	MYSQL_INPUT_INIT(4);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_FLOAT, &chrono, sizeof(chrono));
-	MYSQL_INPUT(2, MYSQL_TYPE_FLOAT, &bonus, sizeof(bonus));
-	MYSQL_INPUT(3, MYSQL_TYPE_FLOAT, &overall, sizeof(overall));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_F32(&chrono);
+	MYSQL_INPUT_F32(&bonus);
+	MYSQL_INPUT_F32(&overall);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -313,10 +313,10 @@ static Database_Result<Database_No_Value> database_upsert_win_rate_recent(const 
 	float overall = (float) stats->win_rate_recent.overall;
 
 	MYSQL_INPUT_INIT(4);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &stats->member_id, sizeof(stats->member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_FLOAT, &chrono, sizeof(chrono));
-	MYSQL_INPUT(2, MYSQL_TYPE_FLOAT, &bonus, sizeof(bonus));
-	MYSQL_INPUT(3, MYSQL_TYPE_FLOAT, &overall, sizeof(overall));
+	MYSQL_INPUT_I64(&stats->member_id);
+	MYSQL_INPUT_F32(&chrono);
+	MYSQL_INPUT_F32(&bonus);
+	MYSQL_INPUT_F32(&overall);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -600,30 +600,30 @@ static Database_Result<Database_No_Value> database_upsert_leaderboard(const Lead
 		MYSQL_STATEMENT();
 
 		MYSQL_INPUT_INIT(22);
-			MYSQL_INPUT( 0, MYSQL_TYPE_STRING, leaderboard->league, strlen(leaderboard->league));
-			MYSQL_INPUT( 1, MYSQL_TYPE_LONG, &leaderboard->season, sizeof(leaderboard->season));
-			MYSQL_INPUT( 2, MYSQL_TYPE_LONGLONG, &leaderboard->rows[row].member_id, sizeof(leaderboard->rows[row].member_id));
-			MYSQL_INPUT( 3, MYSQL_TYPE_LONG, &leaderboard->rows[row].rank, sizeof(leaderboard->rows[row].rank));
+		MYSQL_INPUT_STR(leaderboard->league, strlen(leaderboard->league));
+		MYSQL_INPUT_I32(&leaderboard->season);
+		MYSQL_INPUT_I64(&leaderboard->rows[row].member_id);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].rank);
 
-			MYSQL_INPUT( 4, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 0], sizeof(leaderboard->rows[row].points[ 0]));
-			MYSQL_INPUT( 5, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 1], sizeof(leaderboard->rows[row].points[ 1]));
-			MYSQL_INPUT( 6, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 2], sizeof(leaderboard->rows[row].points[ 2]));
-			MYSQL_INPUT( 7, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 3], sizeof(leaderboard->rows[row].points[ 3]));
-			MYSQL_INPUT( 8, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 4], sizeof(leaderboard->rows[row].points[ 4]));
-			MYSQL_INPUT( 9, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 5], sizeof(leaderboard->rows[row].points[ 5]));
-			MYSQL_INPUT(10, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 6], sizeof(leaderboard->rows[row].points[ 6]));
-			MYSQL_INPUT(11, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 7], sizeof(leaderboard->rows[row].points[ 7]));
-			MYSQL_INPUT(12, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 8], sizeof(leaderboard->rows[row].points[ 8]));
-			MYSQL_INPUT(13, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[ 9], sizeof(leaderboard->rows[row].points[ 9]));
-			MYSQL_INPUT(14, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[10], sizeof(leaderboard->rows[row].points[10]));
-			MYSQL_INPUT(15, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[11], sizeof(leaderboard->rows[row].points[11]));
-			MYSQL_INPUT(16, MYSQL_TYPE_LONG, &leaderboard->rows[row].points[12], sizeof(leaderboard->rows[row].points[12]));
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 0]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 1]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 2]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 3]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 4]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 5]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 6]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 7]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 8]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[ 9]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[10]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[11]);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points[12]);
 
-			MYSQL_INPUT(17, MYSQL_TYPE_LONG, &leaderboard->rows[row].points, sizeof(leaderboard->rows[row].points));
-			MYSQL_INPUT(18, MYSQL_TYPE_FLOAT, &leaderboard->rows[row].average, sizeof(leaderboard->rows[row].average));
-			MYSQL_INPUT(19, MYSQL_TYPE_LONG, &leaderboard->rows[row].drafts, sizeof(leaderboard->rows[row].drafts));
-			MYSQL_INPUT(20, MYSQL_TYPE_LONG, &leaderboard->rows[row].trophies, sizeof(leaderboard->rows[row].trophies));
-			MYSQL_INPUT(21, MYSQL_TYPE_FLOAT, &leaderboard->rows[row].win_rate, sizeof(leaderboard->rows[row].win_rate));
+		MYSQL_INPUT_I32(&leaderboard->rows[row].points);
+		MYSQL_INPUT_F32(&leaderboard->rows[row].average);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].drafts);
+		MYSQL_INPUT_I32(&leaderboard->rows[row].trophies);
+		MYSQL_INPUT_F32(&leaderboard->rows[row].win_rate);
 		MYSQL_INPUT_BIND_AND_EXECUTE();
 	}
 
@@ -780,9 +780,9 @@ static Database_Result<Database_No_Value> database_upsert_badge_card(const uint6
 	time_t timestamp = time(NULL) - (10*60*60); // NOTE: Temporary time adjustment until the ?stats command is moved to C++
 
 	MYSQL_INPUT_INIT(3);
-	MYSQL_INPUT(0, MYSQL_TYPE_LONGLONG, &member_id, sizeof(member_id));
-	MYSQL_INPUT(1, MYSQL_TYPE_STRING, url, strlen(url));
-	MYSQL_INPUT(2, MYSQL_TYPE_LONGLONG, &timestamp, sizeof(timestamp));
+	MYSQL_INPUT_I64(&member_id);
+	MYSQL_INPUT_STR(url, strlen(url));
+	MYSQL_INPUT_I64(&timestamp);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -895,11 +895,11 @@ static Database_Result<Database_No_Value> database_insert_command(const char* na
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(5);
-	MYSQL_INPUT(0, MYSQL_TYPE_STRING, name, strlen(name));
-	MYSQL_INPUT(1, MYSQL_TYPE_TINY, &team, sizeof(team));
-	MYSQL_INPUT(2, MYSQL_TYPE_TINY, &hidden, sizeof(hidden));
-	MYSQL_INPUT(3, MYSQL_TYPE_STRING, content, strlen(content));
-	MYSQL_INPUT(4, MYSQL_TYPE_STRING, summary, strlen(summary));
+	MYSQL_INPUT_STR(name, strlen(name));
+	MYSQL_INPUT_I32(&team);
+	MYSQL_INPUT_I32(&hidden);
+	MYSQL_INPUT_STR(content, strlen(content));
+	MYSQL_INPUT_STR(summary, strlen(summary));
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
@@ -999,8 +999,8 @@ Database_Result<Database_No_Value> database_update_xmage_version(const char* ver
 	time_t timestamp = time(NULL) - (10*60*60);
 
 	MYSQL_INPUT_INIT(2);
-	MYSQL_INPUT(0, MYSQL_TYPE_STRING, version, strlen(version));
-	MYSQL_INPUT(1, MYSQL_TYPE_LONGLONG, &timestamp, sizeof(timestamp));
+	MYSQL_INPUT_STR(version, strlen(version));
+	MYSQL_INPUT_I64(&timestamp);
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
 	MYSQL_RETURN();
