@@ -12,6 +12,10 @@ static const char* BUILD_MODE = "Release";
 
 #include <vector>
 
+#define FMT_HEADER_ONLY
+#include <fmt/format.h>
+
+
 // TODO: Update to version 7.14? Seems to have a lot of arbitrary breaking
 // changes that would have little to no benefit here...
 #include "mongoose.h"
@@ -52,7 +56,7 @@ struct Config {
 #include "log.h"
 #include "database.h"
 #include "curl.h"
-#include "scope_exit.h"
+#include "defer.h"
 
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -373,7 +377,7 @@ http_response parse_stats(const mg_str json) {
 	if(stats.devotion.name == NULL) {
 		return {400, mg_mprintf(R"({"result":"'devotion.name' key not found"})")};
 	}
-	SCOPE_EXIT(free(stats.devotion.name));
+	defer { free(stats.devotion.name); };
 	if(strlen(stats.devotion.name) > DEVOTION_BADGE_NAME_LENGTH_MAX) {
 		return {400, mg_mprintf(R"({"result":"'devotion.name' > %d characters"})", DEVOTION_BADGE_NAME_LENGTH_MAX)};
 	}
@@ -392,7 +396,7 @@ http_response parse_stats(const mg_str json) {
 	if(stats.victory.name == NULL) {
 		return {400, mg_mprintf(R"({"result":"'victory.name' key not found"})")};
 	}
-	SCOPE_EXIT(free(stats.victory.name));
+	defer{ free(stats.victory.name); };
 	if(strlen(stats.victory.name) > VICTORY_BADGE_NAME_LENGTH_MAX) {
 		return {400, mg_mprintf(R"({"result":"'victory.name' > %d characters"})", VICTORY_BADGE_NAME_LENGTH_MAX)};
 	}
@@ -411,7 +415,7 @@ http_response parse_stats(const mg_str json) {
 	if(stats.trophies.name == NULL) {
 		return {400, mg_mprintf(R"({"result":"'trophies.name' key not found"})")};
 	}
-	SCOPE_EXIT(free(stats.trophies.name));
+	defer{ free(stats.trophies.name); };
 	if(strlen(stats.trophies.name) > TROPHIES_BADGE_NAME_LENGTH_MAX) {
 		return {400, mg_mprintf(R"({"result":"'trophies.name' > %d characters"})", TROPHIES_BADGE_NAME_LENGTH_MAX)};
 	}
@@ -430,7 +434,7 @@ http_response parse_stats(const mg_str json) {
 	if(stats.hero.name == NULL) {
 		return {400, mg_mprintf(R"({"result":"'hero.name' key not found"})")};
 	}
-	SCOPE_EXIT(free(stats.hero.name));
+	defer { free(stats.hero.name); };
 	if(strlen(stats.hero.name) > SHARK_BADGE_NAME_LENGTH_MAX) {
 		return {400, mg_mprintf(R"({"result":"'hero.name' > %d characters"})", SHARK_BADGE_NAME_LENGTH_MAX)};
 	}
@@ -449,7 +453,7 @@ http_response parse_stats(const mg_str json) {
 	if(stats.shark.name == NULL) {
 		return {400, mg_mprintf(R"({"result":"'shark.name' key not found"})")};
 	}
-	SCOPE_EXIT(free(stats.shark.name));
+	defer { free(stats.shark.name); };
 	if(strlen(stats.shark.name) > SHARK_BADGE_NAME_LENGTH_MAX) {
 		return {400, mg_mprintf(R"({"result":"'shark.name' > %d characters"})", SHARK_BADGE_NAME_LENGTH_MAX)};
 	}
@@ -638,7 +642,7 @@ http_response parse_leaderboards(const mg_str json) {
 	if(leaderboard.league == NULL) {
 		return {400, mg_mprintf(R"({"result":"'league' key not found"})")};
 	}
-	SCOPE_EXIT(free(leaderboard.league));
+	defer { free(leaderboard.league); };
 
 	leaderboard.season = mg_json_get_long(json, "$.season", -1);
 	if(leaderboard.season == -1) {
@@ -728,7 +732,7 @@ http_response make_thumbnail(const mg_str json) {
 	if(url == NULL) {
 		return {400, strdup("{\"result\":\"malformed JSON\"}")};
 	}
-	SCOPE_EXIT(free((void*)url));
+	defer { free((void*)url); };
 
 	const char* filename = NULL;
 	for(size_t i = strlen(url)-1; i > 0; --i) {
@@ -746,12 +750,12 @@ http_response make_thumbnail(const mg_str json) {
 		log(LOG_LEVEL_DEBUG, "%s: downloadfile(%s)", __FUNCTION__, url);
 		auto buffer = download_file(url);
 		if(has_value(buffer)) {
-			SCOPE_EXIT(free(buffer.value.data));
+			defer { free(buffer.value.data); };
 
 			int width, height, channels;
 			uint8_t* img = stbi_load_from_memory(buffer.value.data, buffer.value.size, &width, &height, &channels, 4);
 			if(img != NULL) {
-				SCOPE_EXIT(stbi_image_free(img));
+				defer{ stbi_image_free(img); };
 
 				uint8_t* resized = (uint8_t*)alloca(THUMBNAIL_SIZE*THUMBNAIL_SIZE*4);
 				stbir_resize_uint8_srgb(img, width, height, 0, resized, THUMBNAIL_SIZE, THUMBNAIL_SIZE, 0, STBIR_RGBA);
@@ -835,19 +839,19 @@ http_response pdf_to_png(const mg_str json) {
 	if(mem == NULL) {
 		return {400, mg_mprintf(R"({"result":"'member_id' key not found"})")};
 	}
-	SCOPE_EXIT(free(mem));
+	defer{ free(mem); };
 
 	poppler::document *pdf = poppler::document::load_from_raw_data(mem, mem_len);
 	if(pdf == NULL) {
 		return {400, mg_mprintf(R"({"result":"could not open PDF"})")};
 	}
-	SCOPE_EXIT(delete pdf);
+	defer{ delete pdf; };
 	int page_count = pdf->pages();
 	if(page_count == 0) {
 		return {400, mg_mprintf(R"({"result":"no pages"})")};
 	}
 	poppler::page *page = pdf->create_page(0);
-	SCOPE_EXIT(delete page);
+	defer{ delete page; };
 	poppler::page_renderer renderer;
 	renderer.set_render_hints(poppler::page_renderer::text_antialiasing | poppler::page_renderer::text_hinting);
 	renderer.set_image_format(poppler::image::format_enum::format_rgb24);
@@ -858,13 +862,13 @@ http_response pdf_to_png(const mg_str json) {
 	if(png == NULL) {
 		return {500, mg_mprintf(R"({"result":"Error decoding PDF to PNG"})")};
 	}
-	SCOPE_EXIT(STBIW_FREE(png));
+	defer{ STBIW_FREE(png); };
 
 	auto upload = upload_img_to_imgur((const char*)png, size, g_config.imgur_client_secret);
 	if(is_error(upload)) {
 		return {500, mg_mprintf(R"({"result":"Error uploading to Imgur: %s"})", upload.errstr)};
 	}
-	SCOPE_EXIT(free(upload.value.data));
+	defer{ free(upload.value.data); };
 
 	mg_str result_json = {(const char*)upload.value.data, upload.value.size};
 	char* url = mg_json_get_str(result_json, "$.data.link");
@@ -925,7 +929,7 @@ http_response parse_commands(const mg_str json) {
 		}
 	};
 
-	SCOPE_EXIT(cleanup());
+	defer{ cleanup(); };
 
 	int index = 0;
 	while(true) {
@@ -1011,7 +1015,7 @@ http_response parse_xmage_version(const mg_str json) {
 	if(xmage_version == NULL) {
 		return {400, mg_mprintf(R"({"result":"'version' key not found"})")};
 	}
-	SCOPE_EXIT(free(xmage_version));
+	defer{ free(xmage_version); };
 
 	log(LOG_LEVEL_DEBUG, "XMage version: %s\n", xmage_version);
 
@@ -1025,11 +1029,11 @@ static void *post_thread_function(void *param) {
 	thread_data *p = (thread_data*) param;
 
 	// Free all resources that were passed in param
-	SCOPE_EXIT(free((void*) p->content_type.ptr));
-	SCOPE_EXIT(free((void*) p->api_key.ptr));
-	SCOPE_EXIT(free((void*) p->uri.ptr));
-	SCOPE_EXIT(free((void*) p->body.ptr));
-	SCOPE_EXIT(free(p));
+	defer{ free((void*) p->content_type.ptr); };
+	defer{ free((void*) p->api_key.ptr); };
+	defer{ free((void*) p->uri.ptr); };
+	defer{ free((void*) p->body.ptr); };
+	defer{ free(p); };
 
 #if 0
 	MG_DEBUG(("Content-Type: %s\n", STR_OR_NULL(p->content_type.ptr)));
