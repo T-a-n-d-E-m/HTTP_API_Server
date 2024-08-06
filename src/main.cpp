@@ -1024,6 +1024,66 @@ http_response parse_xmage_version(const mg_str json) {
 	return {200, mg_mprintf(R"({"result":"ok"})")};
 }
 
+Database_Result<Database_No_Value> database_add_role_command(uint64_t guild_id, uint64_t member_id, int command, char* role) {
+	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
+	static const char* query = "INSERT INTO role_command (guild_id, member_id, command, role) VALUES (?,?,?,?)";
+	MYSQL_STATEMENT();
+
+	MYSQL_INPUT_INIT(3);
+	MYSQL_INPUT_I64(&guild_id);
+	MYSQL_INPUT_I64(&member_id);
+	MYSQL_INPUT_I32(&command);
+	MYSQL_INPUT_STR(role, strlen(role));
+	MYSQL_INPUT_BIND_AND_EXECUTE();
+
+	MYSQL_RETURN();
+}
+
+http_response role_command(const mg_str json) {
+	uint64_t member_id = 0;
+	{
+		char* value = mg_json_get_str(json, "$.member_id");
+		if(value != NULL) {
+			member_id = strtoull(value, NULL, 10);
+			free(value);
+		} else {
+			return {400, mg_mprintf(R"({"result":"'member_id' key not found"})")};
+		}
+	}
+
+	uint64_t guild_id = 0;
+	{
+		char* value = mg_json_get_str(json, "$.guild_id");
+		if(value != NULL) {
+			guild_id = strtoull(value, NULL, 10);
+			free(value);
+		} else {
+			return {400, mg_mprintf(R"({"result":"'guild_id' key not found"})")};
+		}
+	}
+
+	int command = mg_json_get_long(json, "$.command", -1);
+	if(command == -1) {
+		return {400, mg_mprintf(R"({"result":"'command' key not found"})")};
+	}
+
+	if((command != 0) || (command != 1)) {
+		return {400, mg_mprintf(R"({"result":"Invalid value for 'command' key"})")};
+	}
+
+	char* role_name = mg_json_get_str(json, "$.role_name");
+	if(role_name == NULL) {
+			return {400, mg_mprintf(R"({"result":"'role_name' key not found"})")};
+	}
+	defer { free(role_name); };
+
+	auto result = database_add_role_command(guild_id, member_id, command, role_name);
+	if(is_error(result)) {
+		return {500, mg_mprintf(R"({"result":"database_add_role_command failed"})")};
+	}
+	return {200, mg_mprintf(R"({"result":"ok"})")};
+}
+
 // Handles POST requests
 static void *post_thread_function(void *param) {
 	thread_data *p = (thread_data*) param;
@@ -1067,6 +1127,9 @@ static void *post_thread_function(void *param) {
 		} else
 		if(mg_match(p->uri, mg_str("/api/v1/pdf2png"), NULL)) {
 			response = pdf_to_png(p->body);
+		} else
+		if(mg_match(p->uri, mg_str("/api/v1/role_command"), NULL)) {
+			response = role_command(p->body);
 		} else {
 			response = {400, strdup(R"({"result":"Invalid API endpoint"})")};
 		}
