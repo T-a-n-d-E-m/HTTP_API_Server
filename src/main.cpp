@@ -1029,7 +1029,7 @@ Database_Result<Database_No_Value> database_add_role_command(uint64_t guild_id, 
 	static const char* query = "INSERT INTO role_command (guild_id, member_id, command, role) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
-	MYSQL_INPUT_INIT(3);
+	MYSQL_INPUT_INIT(4);
 	MYSQL_INPUT_I64(&guild_id);
 	MYSQL_INPUT_I64(&member_id);
 	MYSQL_INPUT_I32(&command);
