@@ -1024,15 +1024,15 @@ http_response parse_xmage_version(const mg_str json) {
 	return {200, mg_mprintf(R"({"result":"ok"})")};
 }
 
-Database_Result<Database_No_Value> database_add_role_command(uint64_t guild_id, uint64_t member_id, int command, char* role) {
+Database_Result<Database_No_Value> database_add_role_command(uint64_t guild_id, uint64_t member_id, int action, char* role) {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
-	static const char* query = "INSERT INTO role_command (guild_id, member_id, command, role) VALUES (?,?,?,?)";
+	static const char* query = "INSERT INTO role_commands (guild_id, member_id, action, role) VALUES (?,?,?,?)";
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(4);
 	MYSQL_INPUT_I64(&guild_id);
 	MYSQL_INPUT_I64(&member_id);
-	MYSQL_INPUT_I32(&command);
+	MYSQL_INPUT_I32(&action);
 	MYSQL_INPUT_STR(role, strlen(role));
 	MYSQL_INPUT_BIND_AND_EXECUTE();
 
@@ -1061,14 +1061,17 @@ http_response role_command(const mg_str json) {
 			return {400, mg_mprintf(R"({"result":"'guild_id' key not found"})")};
 		}
 	}
-
-	int command = mg_json_get_long(json, "$.command", -1);
-	if(command == -1) {
-		return {400, mg_mprintf(R"({"result":"'command' key not found"})")};
+	if(guild_id == 0) {
+		return {400, mg_mprintf(R"({"result":"Invalid value for 'guild_id' key"})")};
 	}
 
-	if((command != 0) || (command != 1)) {
-		return {400, mg_mprintf(R"({"result":"Invalid value for 'command' key"})")};
+	int action = mg_json_get_long(json, "$.action", -1);
+	if(action == -1) {
+		return {400, mg_mprintf(R"({"result":"'action' key not found"})")};
+	}
+
+	if((action < 0) || (action > 1)) {
+		return {400, mg_mprintf(R"({"result":"Invalid value '%d' for 'action' key"})", action)};
 	}
 
 	char* role_name = mg_json_get_str(json, "$.role_name");
@@ -1077,7 +1080,7 @@ http_response role_command(const mg_str json) {
 	}
 	defer { free(role_name); };
 
-	auto result = database_add_role_command(guild_id, member_id, command, role_name);
+	auto result = database_add_role_command(guild_id, member_id, action, role_name);
 	if(is_error(result)) {
 		return {500, mg_mprintf(R"({"result":"database_add_role_command failed"})")};
 	}
