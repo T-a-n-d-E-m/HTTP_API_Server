@@ -92,16 +92,6 @@ struct Config {
 #include "poppler/cpp/poppler-page.h"
 #include "poppler/cpp/poppler-page-renderer.h"
 
-// NOTE to future me. For reasons I don't care to investigate right now, the
-// timestamps that Python generates are 10 hours behind the timestamps
-// that time(NULL) returns.
-//
-// As a temporary fix I'm subtracting 10 hours from timestamps.
-//
-// Once the Python API server is completely gone
-// find everywhere in here that calls time(NULL)-(10*60*60) and remove the
-// adjustment.
-
 #if MG_ENABLE_CUSTOM_LOG
 // Currently not used...
 void mg_log_prefix(int level, const char* file, int line, const char* fname) {
@@ -202,7 +192,7 @@ static Database_Result<Database_No_Value> database_touch_stats(const Stats* stat
 	static const char* query = "REPLACE INTO stats (id, timestamp) VALUES (?,?)";
 	MYSQL_STATEMENT();
 
-	time_t timestamp = time(NULL) - (10*60*60); // NOTE: Temporary time adjustment until the ?stats command is moved to C++
+	time_t timestamp = time(NULL);
 
 	MYSQL_INPUT_INIT(2);
 	MYSQL_INPUT_I64(&stats->member_id);
@@ -781,7 +771,7 @@ static Database_Result<Database_No_Value> database_upsert_badge_card(const uint6
 	static const char* query = "REPLACE INTO badges (id, url, timestamp) VALUES (?,?,?)";
 	MYSQL_STATEMENT();
 
-	time_t timestamp = time(NULL) - (10*60*60); // NOTE: Temporary time adjustment until the ?stats command is moved to C++
+	time_t timestamp = time(NULL);
 
 	MYSQL_INPUT_INIT(3);
 	MYSQL_INPUT_I64(&member_id);
@@ -1000,7 +990,7 @@ Database_Result<Database_No_Value> database_update_xmage_version(const char* ver
 	static const char* query = "REPLACE INTO xmage_version (version, timestamp) VALUES (?,?)";
 	MYSQL_STATEMENT();
 
-	time_t timestamp = time(NULL) - (10*60*60);
+	time_t timestamp = time(NULL);
 
 	MYSQL_INPUT_INIT(2);
 	MYSQL_INPUT_STR(version, strlen(version));
