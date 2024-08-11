@@ -15,7 +15,6 @@ static const char* BUILD_MODE = "Release";
 #define FMT_HEADER_ONLY
 #include <fmt/format.h>
 
-
 // TODO: Update to version 7.14? Seems to have a lot of arbitrary breaking
 // changes that would have little to no benefit here...
 #include "mongoose.h"
