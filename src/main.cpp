@@ -882,15 +882,15 @@ static Database_Result<Database_No_Value> database_clear_commands() {
 	MYSQL_RETURN();
 }
 
-static Database_Result<Database_No_Value> database_insert_command(const char* name, const bool team, const bool hidden, const char* content, const char* summary) {
+static Database_Result<Database_No_Value> database_insert_command(const char* name, const char team, const char hidden, const char* content, const char* summary) {
 	MYSQL_CONNECT(g_config.mysql_host, g_config.mysql_username, g_config.mysql_password, g_config.mysql_database, g_config.mysql_port);
 	static const char* query = "INSERT INTO commands (name, team, hidden, content, summary) VALUES (?,?,?,?,?)";
 	MYSQL_STATEMENT();
 
 	MYSQL_INPUT_INIT(5);
 	MYSQL_INPUT_STR(name, strlen(name));
-	MYSQL_INPUT_I32(&team);
-	MYSQL_INPUT_I32(&hidden);
+	MYSQL_INPUT_I8(&team);
+	MYSQL_INPUT_I8(&hidden);
 	MYSQL_INPUT_STR(content, strlen(content));
 	MYSQL_INPUT_STR(summary, strlen(summary));
 	MYSQL_INPUT_BIND_AND_EXECUTE();
